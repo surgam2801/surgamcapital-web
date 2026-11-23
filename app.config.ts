@@ -81,7 +81,7 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: "#E8F6EF",
+      backgroundColor: "#E8F5F3",
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
@@ -105,7 +105,8 @@ const config: ExpoConfig = {
   },
   web: {
     bundler: "metro",
-    output: "static",
+    // SPA output: fund pages are dynamic and vercel.json/netlify.toml already rewrite to index.html.
+    output: "single",
     favicon: "./assets/images/favicon.png",
   },
   plugins: [
@@ -130,9 +131,9 @@ const config: ExpoConfig = {
         image: "./assets/images/splash-icon.png",
         imageWidth: 200,
         resizeMode: "contain",
-        backgroundColor: "#F6F8F5",
+        backgroundColor: "#F5F8F7",
         dark: {
-          backgroundColor: "#10211D",
+          backgroundColor: "#10201F",
         },
       },
     ],
@@ -142,6 +143,9 @@ const config: ExpoConfig = {
         android: {
           buildArchs: ["armeabi-v7a", "arm64-v8a"],
           minSdkVersion: 24,
+          // Test builds talk to a laptop API over plain HTTP on the local network.
+          // Turn off once the API is served over HTTPS.
+          usesCleartextTraffic: process.env.ALLOW_CLEARTEXT === "1",
         },
       },
     ],

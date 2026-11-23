@@ -2,6 +2,7 @@ import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { ConfirmSheet, InsightCard, ListCard, PageHeader, ScreenFrame, SectionHeading, StatusPill } from "@/components/surgam/ui";
 import { surgam } from "@/components/surgam/theme";
+import { MyOrders } from "@/components/site/orders";
 
 const holdings = [
   { name: "Balanced Growth Fund", type: "Hybrid · Long term", value: "₹ 4,82,240", gain: "+ ₹ 62,440", gainPct: "+14.9%", tone: "green" as const, category: "Balanced" },
@@ -18,6 +19,7 @@ export default function InvestmentsScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="YOUR PORTFOLIO" title="Investments" subtitle="A simple view of where your money is today." right={<StatusPill label="Updated today" tone="green" />} />
+      <MyOrders />
       <View style={styles.summaryRow}>
         <View style={styles.summaryCard}><Text style={styles.summaryLabel}>Current value</Text><Text style={styles.summaryValue}>₹ 12,48,560</Text><Text style={styles.summaryHint}>Across 4 investments</Text></View>
         <View style={styles.summaryCard}><Text style={styles.summaryLabel}>Overall gain</Text><Text style={[styles.summaryValue, styles.greenText]}>+ ₹ 1,35,200</Text><Text style={styles.summaryHint}>11.5% since you started</Text></View>

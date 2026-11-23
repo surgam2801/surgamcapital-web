@@ -2,6 +2,7 @@ import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { ConfirmSheet, ListCard, PageHeader, PrimaryButton, ScreenFrame, SectionHeading, StatusPill } from "@/components/surgam/ui";
 import { surgam } from "@/components/surgam/theme";
+import { MySips } from "@/components/site/orders";
 
 const plans = [
   { type: "SIP", name: "Monthly Growth Plan", amount: "₹18,000 / month", next: "15 Nov 2026", detail: "Balanced Growth Fund", tone: "green" as const, label: "On track" },
@@ -14,6 +15,7 @@ export default function PlansScreen() {
   return (
     <ScreenFrame>
       <PageHeader eyebrow="YOUR ROUTINES" title="Money plans" subtitle="Small, regular actions can make long-term money feel simpler." right={<PrimaryButton label="New plan" icon="plus" onPress={() => setSheet(true)} />} />
+      <MySips />
       <View style={styles.planBanner}><View style={styles.bannerIcon}><Text style={styles.bannerIconText}>↗</Text></View><View style={styles.bannerCopy}><Text style={styles.bannerTitle}>Keep your routine comfortable</Text><Text style={styles.bannerBody}>Your next contribution is planned. You can review or change a plan before its next date.</Text></View></View>
       <View style={styles.section}><SectionHeading title="Your active plans" /><View style={styles.list}>{plans.map((plan) => <ListCard key={plan.name} onPress={() => setSheet(true)}><View style={styles.planTop}><View style={styles.typeBadge}><Text style={styles.typeText}>{plan.type}</Text></View><View style={styles.planCopy}><Text style={styles.planName}>{plan.name}</Text><Text style={styles.planDetail}>{plan.detail}</Text></View><StatusPill label={plan.label} tone={plan.tone} /></View><View style={styles.planBottom}><View><Text style={styles.label}>Amount</Text><Text style={styles.value}>{plan.amount}</Text></View><View><Text style={styles.label}>Next date</Text><Text style={styles.value}>{plan.next}</Text></View><Text style={styles.chevron}>›</Text></View></ListCard>)}</View></View>
       <View style={styles.section}><SectionHeading title="Helpful options" /><View style={styles.optionRow}><View style={styles.optionCopy}><Text style={styles.optionTitle}>Step-up SIP</Text><Text style={styles.optionBody}>Increase your monthly amount gently as your income grows.</Text></View><Text style={styles.optionAction} onPress={() => setSheet(true)}>Explore ›</Text></View><View style={styles.optionRow}><View style={styles.optionCopy}><Text style={styles.optionTitle}>Set a trigger</Text><Text style={styles.optionBody}>Get a reminder when the market moves, so you can decide calmly.</Text></View><Text style={styles.optionAction} onPress={() => setSheet(true)}>Explore ›</Text></View></View>

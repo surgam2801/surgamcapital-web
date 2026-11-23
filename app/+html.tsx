@@ -60,13 +60,13 @@ export default function Root({ children }: PropsWithChildren) {
               /* Style the Google combo dropdown to match Surgam palette */
               .goog-te-gadget-simple {
                 background-color: #FFFFFF !important;
-                border: 1px solid #DCE7E2 !important;
+                border: 1px solid #DCE6E5 !important;
                 padding: 6px 12px !important;
                 border-radius: 12px !important;
                 font-family: inherit !important;
                 font-size: 13px !important;
                 font-weight: 700 !important;
-                color: #10211D !important;
+                color: #10201F !important;
                 display: inline-flex !important;
                 align-items: center !important;
               }

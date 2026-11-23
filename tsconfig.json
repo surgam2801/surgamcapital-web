@@ -8,6 +8,9 @@
       "expo/types"
     ],
     "paths": {
+      "@/server/*": [
+        "../surgamcapital-api/server/*"
+      ],
       "@/*": [
         "./*"
       ],

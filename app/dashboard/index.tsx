@@ -48,10 +48,10 @@ export default function DashboardScreen() {
         <View style={styles.mainColumn}>
           <TrendChart />
           <View style={styles.sectionBlock}>
-            <SectionHeading title="Do this next" action="See all" onAction={() => router.push("/(tabs)/plans" as never)} />
+            <SectionHeading title="Do this next" action="See all" onAction={() => router.push("/dashboard/plans" as never)} />
             <View style={styles.stack}>
               <QuickAction label="Add money" helper="Make an additional investment" icon="plus" onPress={() => showMessage("Add money", "This is a safe demo. In the full Surgam app, you would review the amount and confirm before anything is submitted.")} />
-              <QuickAction label="View reports" helper="See valuation and gain/loss" icon="document" tone="blue" onPress={() => router.push("/(tabs)/investments" as never)} />
+              <QuickAction label="View reports" helper="See valuation and gain/loss" icon="document" tone="blue" onPress={() => router.push("/dashboard/investments" as never)} />
             </View>
           </View>
         </View>
@@ -65,7 +65,7 @@ export default function DashboardScreen() {
           </View>
 
           <View style={styles.sectionBlock}>
-            <SectionHeading title="Coming up" action="View plans" onAction={() => router.push("/(tabs)/plans" as never)} />
+            <SectionHeading title="Coming up" action="View plans" onAction={() => router.push("/dashboard/plans" as never)} />
             <Pressable onPress={() => showMessage("SIP reminder", "Your ₹18,000 monthly SIP is scheduled for 15 November. You can review it before the date.")} style={({ pressed }) => [styles.upcomingCard, pressed && styles.pressed]}>
               <View style={styles.dateBadge}><Text style={styles.dateDay}>15</Text><Text style={styles.dateMonth}>NOV</Text></View>
               <View style={styles.upcomingCopy}><Text style={styles.upcomingTitle}>Monthly SIP</Text><Text style={styles.upcomingBody}>₹18,000 · Auto-invest</Text></View>
@@ -77,7 +77,7 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      <View style={styles.footerNote}><Text style={styles.footerNoteText}>Surgam is a planning space. Demo numbers are for illustration only.</Text><PrimaryButton label="Need help?" icon="chat" secondary onPress={() => router.push("/(tabs)/help" as never)} /></View>
+      <View style={styles.footerNote}><Text style={styles.footerNoteText}>Surgam is a planning space. Demo numbers are for illustration only.</Text><PrimaryButton label="Need help?" icon="chat" secondary onPress={() => router.push("/dashboard/help" as never)} /></View>
       <ConfirmSheet visible={Boolean(sheet)} title={sheet?.title ?? "Done"} body={sheet?.body ?? ""} onClose={() => setSheet(null)} />
     </ScreenFrame>
   );
