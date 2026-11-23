@@ -1,6 +1,6 @@
 import { usePathname, useRouter } from "expo-router";
 import { useState, type ReactNode } from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SurgamMark } from "@/components/surgam/ui";
 import { CALCULATORS, DISCLAIMER, EXPLORE_TOOLS, WAYS_TO_INVEST } from "@/shared/mf/content";
@@ -50,10 +50,9 @@ function Dropdown({ group, onGo, onClose }: { group: NavGroup; onGo: (href: stri
   const isProducts = group.label === "Products";
   return (
     <View pointerEvents="box-none" style={s.dropWrap}>
-      {/* Transparent backdrop below the menu: moving onto the page or clicking it closes the menu.
-          (Closing on the menu's own hover-out fired when the pointer moved onto a child item,
-          which unmounted the item before the click landed.) */}
-      <Pressable accessible={false} onHoverIn={onClose} onPress={onClose} style={s.backdrop} />
+      {/* Menus open and close on click only (no hover), so they never jump while the pointer moves.
+          Clicking anywhere on the page closes the open menu. */}
+      <Pressable accessible={false} onPress={onClose} style={s.backdrop} />
       <View style={[s.drop, isProducts ? { width: 560 } : { width: 620 }]}>
         {isProducts ? (
           <View style={{ flexDirection: "row", gap: 24 }}>
@@ -86,6 +85,53 @@ function Dropdown({ group, onGo, onClose }: { group: NavGroup; onGo: (href: stri
   );
 }
 
+/** Fund search available from every page. */
+function SearchButton({ compact }: { compact: boolean }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const res = trpc.mf.search.useQuery({ q, limit: 8 }, { enabled: open && q.trim().length >= 2, retry: false, placeholderData: (p) => p });
+  const close = () => {
+    setOpen(false);
+    setQ("");
+  };
+  return (
+    <>
+      <Pressable accessibilityRole="button" accessibilityLabel="Search funds" onPress={() => setOpen(true)} style={compact ? s.menuBtn : s.searchBtn}>
+        <Icon name="search" size={compact ? 22 : 18} color={compact ? c.ink : c.muted} />
+        {!compact ? <Text style={s.searchBtnText}>Search funds</Text> : null}
+      </Pressable>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
+        <Pressable accessible={false} onPress={close} style={s.searchBackdrop}>
+          <Pressable accessible={false} onPress={() => {}} style={s.searchPanel}>
+            <View style={s.searchField}>
+              <Icon name="search" size={20} color={c.muted} />
+              <TextInput autoFocus accessibilityLabel="Search funds by name or fund house" value={q} onChangeText={setQ} placeholder="Type a fund or fund house, e.g. HDFC flexi" placeholderTextColor={c.muted} style={s.searchInput} returnKeyType="search" />
+              <Pressable accessibilityRole="button" accessibilityLabel="Close search" onPress={close} style={s.menuBtn}>
+                <Icon name="close" size={22} color={c.inkSoft} />
+              </Pressable>
+            </View>
+            {q.trim().length < 2 ? (
+              <Text style={s.searchHint}>Type at least two letters.</Text>
+            ) : res.error ? (
+              <Text style={s.searchHint}>Search is not available right now. Please try again in a moment.</Text>
+            ) : res.data && res.data.items.length === 0 ? (
+              <Text style={s.searchHint}>No funds found. Try a shorter name.</Text>
+            ) : (
+              (res.data?.items ?? []).map((f) => (
+                <Pressable key={f.code} accessibilityRole="link" onPress={() => { close(); router.push(`/funds/${f.code}` as never); }} style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [s.searchRow, (pressed || hovered) && { backgroundColor: c.surfaceTint }]}>
+                  <Text style={s.searchRowTitle} numberOfLines={1}>{f.name}</Text>
+                  <Text style={s.searchRowMeta}>{f.subCategory} · {f.amc}</Text>
+                </Pressable>
+              ))
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
 export function SiteHeader() {
   const router = useRouter();
   const pathname = usePathname();
@@ -114,8 +160,7 @@ export function SiteHeader() {
                   key={g.label}
                   accessibilityRole={g.items ? "button" : "link"}
                   accessibilityState={g.items ? { expanded: menu === g.label } : undefined}
-                  onHoverIn={() => setMenu(g.items ? g.label : null)}
-                  onPress={() => (g.items ? setMenu(g.label) : go(g.href!))}
+                  onPress={() => (g.items ? setMenu(menu === g.label ? null : g.label) : go(g.href!))}
                   style={s.navItem}
                 >
                   <Text style={[s.navText, active && s.navTextActive]}>{g.label}</Text>
@@ -127,6 +172,7 @@ export function SiteHeader() {
           </View>
         ) : null}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <SearchButton compact={!isDesktop} />
           <AccountButton onNavigate={() => setOpen(false)} />
           {!isDesktop ? (
             <Pressable accessibilityRole="button" accessibilityLabel={open ? "Close menu" : "Open menu"} onPress={() => setOpen(!open)} style={s.menuBtn}>
@@ -170,11 +216,11 @@ export function SiteHeader() {
 function FooterCol({ title, links }: { title: string; links: { label: string; href?: string }[] }) {
   const router = useRouter();
   return (
-    <View style={{ gap: 10, flexGrow: 1, flexBasis: 150 }}>
+    <View style={{ gap: 2, flexGrow: 1, flexBasis: 150 }}>
       <Text style={s.footHead}>{title}</Text>
       {links.map((l) =>
         l.href ? (
-          <Pressable key={l.label} accessibilityRole="link" onPress={() => router.push(l.href as never)}>
+          <Pressable key={l.label} accessibilityRole="link" onPress={() => router.push(l.href as never)} style={{ paddingVertical: 8 }}>
             <Text style={s.footLink}>{l.label}</Text>
           </Pressable>
         ) : (
@@ -214,7 +260,7 @@ export function SiteFooter() {
   );
 }
 
-export function SiteShell({ children }: { children: ReactNode }) {
+export function SiteShell({ children, bottomBar }: { children: ReactNode; bottomBar?: ReactNode }) {
   const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1, backgroundColor: c.canvas, paddingTop: Platform.OS === "web" ? 0 : insets.top }}>
@@ -223,6 +269,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
         <View style={{ flexGrow: 1 }}>{children}</View>
         <SiteFooter />
       </ScrollView>
+      {bottomBar ? <View style={[s.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>{bottomBar}</View> : null}
     </View>
   );
 }
@@ -237,6 +284,17 @@ const s = StyleSheet.create({
   navUnderline: { position: "absolute", left: 12, right: 12, bottom: -1, height: 2, backgroundColor: c.evergreen },
   account: { backgroundColor: c.evergreen, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 8 },
   accountText: { fontFamily: F, color: c.white, fontSize: 14, fontWeight: "600" },
+  searchBtn: { flexDirection: "row", alignItems: "center", gap: 8, height: 40, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: c.borderStrong, minWidth: 180 },
+  searchBtnText: { fontFamily: F, color: c.muted, fontSize: 14 },
+  searchBackdrop: { flex: 1, backgroundColor: "rgba(11,30,42,0.5)", alignItems: "center", paddingTop: 72, paddingHorizontal: 16 },
+  searchPanel: { width: "100%", maxWidth: 640, backgroundColor: c.surface, borderRadius: 12, padding: 8, gap: 2 },
+  searchField: { flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 12, borderBottomWidth: 1, borderBottomColor: c.border, marginBottom: 4 },
+  searchInput: { fontFamily: F, flex: 1, fontSize: 16, color: c.ink, paddingVertical: 14 },
+  searchHint: { fontFamily: F, color: c.muted, fontSize: 14, padding: 14 },
+  searchRow: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, minHeight: 52, justifyContent: "center" },
+  searchRowTitle: { fontFamily: F, color: c.ink, fontSize: 15, fontWeight: "600" },
+  searchRowMeta: { fontFamily: F, color: c.muted, fontSize: 13, marginTop: 2 },
+  bottomBar: { borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.surface, paddingHorizontal: 16, paddingTop: 12 },
   menuBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 8 },
   dropWrap: { position: "absolute", top: 64, left: 0, right: 0, alignItems: "center", zIndex: 30 },
   backdrop: { position: "absolute", top: 0, left: 0, right: 0, height: 4000, backgroundColor: "transparent" },
@@ -251,16 +309,16 @@ const s = StyleSheet.create({
   drawer: { borderTopWidth: 1, borderTopColor: c.border, paddingVertical: 6, backgroundColor: c.surface },
   drawerItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 14 },
   drawerText: { fontFamily: F, color: c.ink, fontSize: 16, fontWeight: "500" },
-  drawerSub: { paddingLeft: 36, paddingRight: 20, paddingVertical: 11 },
+  drawerSub: { paddingLeft: 36, paddingRight: 20, paddingVertical: 13, minHeight: 48, justifyContent: "center" },
   drawerSubText: { fontFamily: F, color: c.inkSoft, fontSize: 15 },
   footer: { backgroundColor: c.navy, paddingVertical: 56 },
   footTop: { flexDirection: "row", flexWrap: "wrap", gap: 32 },
   footMark: { width: 28, height: 28, borderRadius: 6, backgroundColor: c.evergreen, alignItems: "center", justifyContent: "center" },
   footMarkText: { fontFamily: F, color: c.white, fontWeight: "600", fontSize: 15 },
   footWord: { fontFamily: F, color: c.white, fontSize: 17, fontWeight: "600", letterSpacing: -0.3 },
-  footBody: { fontFamily: F, color: "#A7B4BD", fontSize: 14, lineHeight: 21, maxWidth: 300 },
+  footBody: { fontFamily: F, color: c.onDarkBody, fontSize: 14, lineHeight: 21, maxWidth: 300 },
   footHead: { fontFamily: F, color: c.white, fontSize: 13, fontWeight: "600", marginBottom: 4 },
-  footLink: { fontFamily: F, color: "#A7B4BD", fontSize: 14 },
-  footRule: { height: 1, backgroundColor: "#1E3442", marginVertical: 28 },
-  footSmall: { fontFamily: F, color: "#7F8F9A", fontSize: 12, lineHeight: 18 },
+  footLink: { fontFamily: F, color: c.onDarkBody, fontSize: 14 },
+  footRule: { height: 1, backgroundColor: c.navyRule, marginVertical: 28 },
+  footSmall: { fontFamily: F, color: c.onDarkMuted, fontSize: 12, lineHeight: 18 },
 });

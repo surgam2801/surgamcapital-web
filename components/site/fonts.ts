@@ -16,6 +16,6 @@ export function loadWebFonts() {
   css.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap";
   document.head.append(pre, css);
   const style = document.createElement("style");
-  style.textContent = "body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-feature-settings:'cv11','ss01';}";
+  style.textContent = "body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-feature-settings:'cv11','ss01';} [role=heading]{text-wrap:balance;}";
   document.head.append(style);
 }

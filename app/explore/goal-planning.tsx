@@ -4,6 +4,8 @@ import { SiteShell } from "@/components/site/shell";
 import { Button, c, Card, EmptyState, Grid, Icon, Notice, NumberField, Pill, Section, Stat, TextField, styles as t, useBreakpoint } from "@/components/site/ui";
 import { formatINR, planGoal } from "@/shared/mf/calc";
 import { trpc } from "@/lib/trpc";
+import { useToast } from "@/components/site/toast";
+import { friendlyError } from "@/lib/mf/errors";
 
 const KINDS = ["Education", "Wedding", "Home", "Vacation", "Car", "Emergency fund", "Other"];
 
@@ -13,7 +15,9 @@ export default function GoalPlanning() {
   const utils = trpc.useUtils();
   const goals = trpc.goals.list.useQuery(undefined, { enabled: !!me.data, retry: false });
   const add = trpc.goals.add.useMutation({ onSuccess: () => utils.goals.list.invalidate() });
-  const remove = trpc.goals.remove.useMutation({ onSuccess: () => utils.goals.list.invalidate() });
+  const remove = trpc.goals.remove.useMutation({ onSettled: () => utils.goals.list.invalidate() });
+  const toast = useToast();
+  const [hidden, setHidden] = useState<string[]>([]);
 
   const [name, setName] = useState("");
   const [kind, setKind] = useState(KINDS[0]);
@@ -23,7 +27,7 @@ export default function GoalPlanning() {
   const [ret, setRet] = useState(12);
 
   const preview = planGoal({ years, costToday: target, inflationPct: inflation, existing: 0, existingReturnPct: 0, newReturnPct: ret, lumpsum: 0 });
-  const list = goals.data ?? [];
+  const list = (goals.data ?? []).filter((g) => !hidden.includes(g.id));
   const totalSip = list.reduce((a, g) => a + planGoal({ years: g.years, costToday: g.targetToday, inflationPct: g.inflationPct, existing: 0, existingReturnPct: 0, newReturnPct: g.returnPct, lumpsum: 0 }).monthlySip, 0);
 
   return (
@@ -50,7 +54,7 @@ export default function GoalPlanning() {
             ) : (
               <Button label="Sign in to save goals" variant="secondary" href={`/sign-in?next=${encodeURIComponent("/explore/goal-planning")}`} />
             )}
-            {add.error ? <Notice tone="amber" text={add.error.message} /> : null}
+            {add.error ? <Notice tone="amber" text={friendlyError(add.error)} /> : null}
           </Card>
 
           <Card style={{ ...(isDesktop ? { flex: 1.2 } : { width: "100%" }), height: undefined, gap: 14 }}>
@@ -61,18 +65,26 @@ export default function GoalPlanning() {
               <EmptyState title="No goals yet" body="Add your first goal to see the monthly amount it needs." />
             ) : (
               <>
-                <View style={{ backgroundColor: c.mintSoft, borderRadius: 16, padding: 16 }}>
+                <View style={{ backgroundColor: c.mintSoft, borderRadius: 12, padding: 16 }}>
                   <Stat label="Total monthly SIP for all goals" value={formatINR(totalSip)} tone="pos" />
                 </View>
                 <Grid min={240} gap={12}>
                   {list.map((g) => {
                     const p = planGoal({ years: g.years, costToday: g.targetToday, inflationPct: g.inflationPct, existing: 0, existingReturnPct: 0, newReturnPct: g.returnPct, lumpsum: 0 });
                     return (
-                      <View key={g.id} style={{ borderWidth: 1, borderColor: c.border, borderRadius: 16, padding: 14, gap: 6 }}>
+                      <View key={g.id} style={{ borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 14, gap: 6 }}>
                         <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
                           <Text style={[t.h4, { flex: 1 }]}>{g.name}</Text>
-                          <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${g.name}`} onPress={() => remove.mutate({ id: g.id })}>
-                            <Icon name="trash-outline" size={18} color={c.muted} />
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Delete goal ${g.name}`}
+                            style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center", margin: -12 }}
+                            onPress={() => {
+                              setHidden((h) => [...h, g.id]);
+                              toast.show({ message: `Goal "${g.name}" deleted.`, actionLabel: "Undo", onAction: () => setHidden((h) => h.filter((x) => x !== g.id)), onExpire: () => remove.mutate({ id: g.id }) });
+                            }}
+                          >
+                            <Icon name="trash-outline" size={20} color={c.inkSoft} />
                           </Pressable>
                         </View>
                         <Text style={t.small}>{g.kind} · in {g.years} years · {formatINR(p.futureCost, { compact: true })}</Text>

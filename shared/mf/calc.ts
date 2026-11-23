@@ -230,7 +230,35 @@ export function formatINR(value: number, opts: { compact?: boolean } = {}) {
   return `${rounded < 0 ? "-" : ""}₹${rest ? rest + "," : ""}${last3}`;
 }
 
+/** Percentage with an arrow, so gain/loss never relies on colour alone. */
 export function formatPct(v: number | null | undefined) {
   if (v === null || v === undefined || !Number.isFinite(v)) return "–";
-  return `${v > 0 ? "+" : ""}${v.toFixed(2)}%`;
+  const arrow = v > 0 ? "▲ " : v < 0 ? "▼ " : "";
+  return `${arrow}${Math.abs(v).toFixed(2)}%`;
+}
+
+/** 1500000 -> "15,00,000" (Indian grouping, no symbol). */
+export function formatIndian(value: number) {
+  if (!Number.isFinite(value)) return "";
+  const [int, dec] = Math.abs(value).toString().split(".");
+  const last3 = int.slice(-3);
+  const rest = int.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ",");
+  return `${value < 0 ? "-" : ""}${rest ? rest + "," : ""}${last3}${dec ? "." + dec : ""}`;
+}
+
+/** 1500000 -> "₹15 lakh", 25000000 -> "₹2.5 crore". */
+export function amountInWords(value: number) {
+  const trim = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0+$/, "").replace(/\.$/, ""));
+  if (value >= 1e7) return `₹${trim(value / 1e7)} crore`;
+  if (value >= 1e5) return `₹${trim(value / 1e5)} lakh`;
+  if (value >= 1e3) return `₹${trim(value / 1e3)} thousand`;
+  return `₹${trim(value)}`;
+}
+
+/** "2026-11-20" -> "20 Nov 2026". */
+export function formatDate(iso: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${Number(m[3])} ${months[Number(m[2]) - 1]} ${m[1]}`;
 }

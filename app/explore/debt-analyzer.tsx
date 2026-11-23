@@ -30,7 +30,10 @@ export default function DebtAnalyzer() {
     <SiteShell>
       <Section kicker="Explore" title="Debt fund analyzer" subtitle="Debt categories side by side, with typical holding periods and median returns of the largest funds in each.">
         {q.isLoading ? (
-          <Skeleton height={300} />
+          <View style={{ gap: 12 }}>
+            <Text style={t.small}>Working out returns across all debt categories. The first time can take up to a minute.</Text>
+            <Skeleton height={300} />
+          </View>
         ) : !q.data ? (
           <EmptyState title="Debt data is unavailable" body="The Surgam server could not be reached." />
         ) : (

@@ -38,13 +38,13 @@ export default function MutualFunds() {
       <View style={s.hero}>
         <Container style={[s.heroRow, !isDesktop && { flexDirection: "column", alignItems: "flex-start" }]}>
           <View style={{ flex: 1, gap: 14 }}>
-            <Text style={[t.kicker, { color: "#8FB7BB" }]}>Products · Mutual funds</Text>
+            <Text style={[t.kicker, { color: c.onDarkAccent }]}>Products · Mutual funds</Text>
             <Text style={[t.h1, { color: c.white }, isPhone && { fontSize: 32, lineHeight: 39 }]} accessibilityRole="header">
               Mutual fund investing, made simple.
             </Text>
-            <Text style={[t.lead, { color: "#B4C2CB" }]}>Research over a thousand funds, start a SIP in minutes and track every rupee in one place.</Text>
+            <Text style={[t.lead, { color: c.onDarkBody }]}>Research over a thousand funds, start a SIP in minutes and track every rupee in one place.</Text>
             <View style={{ flexDirection: "row", gap: 12, flexWrap: "wrap" }}>
-              <Button label="Invest now" variant="light" size="lg" href="/sign-in" />
+              <Button label="Start investing" variant="light" size="lg" href="/sign-in" />
               <Button label="Compare performance" variant="outlineLight" size="lg" href="/explore/performance" />
             </View>
           </View>

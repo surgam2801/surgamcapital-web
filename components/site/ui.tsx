@@ -1,7 +1,10 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View, type StyleProp, type ViewStyle } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View, type StyleProp, type ViewStyle } from "react-native";
+import { amountInWords, formatIndian } from "@/shared/mf/calc";
+import { GLOSSARY } from "@/shared/mf/content";
 import { surgam } from "@/components/surgam/theme";
 import { F } from "./fonts";
 
@@ -82,14 +85,15 @@ export function IconTile({ icon, tone = "teal" }: { icon: string; tone?: "teal" 
   );
 }
 
-export function Button({ label, onPress, href, variant = "primary", icon, disabled, loading, full, size = "md" }: { label: string; onPress?: () => void; href?: string; variant?: "primary" | "secondary" | "ghost" | "light" | "outlineLight"; icon?: string; disabled?: boolean; loading?: boolean; full?: boolean; size?: "md" | "lg" }) {
+export function Button({ label, onPress, href, variant = "primary", icon, disabled, loading, full, size = "md" }: { label: string; onPress?: () => void; href?: string; variant?: "primary" | "secondary" | "ghost" | "light" | "outlineLight" | "danger"; icon?: string; disabled?: boolean; loading?: boolean; full?: boolean; size?: "md" | "lg" }) {
   const router = useRouter();
   const v = {
     primary: { bg: c.evergreen, fg: c.white, border: c.evergreen },
-    secondary: { bg: c.surface, fg: c.ink, border: c.border },
+    secondary: { bg: c.surface, fg: c.ink, border: c.borderStrong },
     ghost: { bg: "transparent", fg: c.evergreen, border: "transparent" },
     light: { bg: c.white, fg: c.navy, border: c.white },
     outlineLight: { bg: "transparent", fg: c.white, border: "rgba(255,255,255,0.35)" },
+    danger: { bg: c.loss, fg: c.white, border: c.loss },
   }[variant];
   return (
     <Pressable
@@ -132,20 +136,22 @@ export function Tag({ label, tone = "teal" }: { label: string; tone?: "teal" | "
   );
 }
 
-export function NumberField({ label, value, onChange, prefix, suffix, min = 0, max = 1e10, step = 1, hint }: { label: string; value: number; onChange: (v: number) => void; prefix?: string; suffix?: string; min?: number; max?: number; step?: number; hint?: string }) {
+export function NumberField({ label, value, onChange, prefix, suffix, min = 0, max = 1e10, step = 1, hint, money }: { label: string; value: number; onChange: (v: number) => void; prefix?: string; suffix?: string; min?: number; max?: number; step?: number; hint?: string; money?: boolean }) {
   const clamp = (v: number) => Math.min(max, Math.max(min, v));
+  const isMoney = money ?? prefix === "₹";
+  const words = isMoney && value >= 100000 ? amountInWords(value) : null;
   return (
     <View style={{ gap: 6 }}>
       <Text style={styles.label} nativeID={`lbl-${label}`}>{label}</Text>
       <View style={styles.inputRow}>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Decrease ${label}`} onPress={() => onChange(clamp(Number((value - step).toFixed(2))))} style={styles.stepBtn}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Decrease ${label}`} hitSlop={4} onPress={() => onChange(clamp(Number((value - step).toFixed(2))))} style={styles.stepBtn}>
           <Icon name="remove" size={18} color={c.evergreen} />
         </Pressable>
         {prefix ? <Text style={styles.affix}>{prefix}</Text> : null}
         <TextInput
           accessibilityLabelledBy={`lbl-${label}`}
           accessibilityLabel={label}
-          value={Number.isFinite(value) ? String(value) : ""}
+          value={Number.isFinite(value) ? (isMoney ? formatIndian(value) : String(value)) : ""}
           onChangeText={(t) => {
             const n = Number(t.replace(/[^0-9.]/g, ""));
             onChange(Number.isFinite(n) ? clamp(n) : min);
@@ -155,21 +161,102 @@ export function NumberField({ label, value, onChange, prefix, suffix, min = 0, m
           style={styles.input}
         />
         {suffix ? <Text style={styles.affix}>{suffix}</Text> : null}
-        <Pressable accessibilityRole="button" accessibilityLabel={`Increase ${label}`} onPress={() => onChange(clamp(Number((value + step).toFixed(2))))} style={styles.stepBtn}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Increase ${label}`} hitSlop={4} onPress={() => onChange(clamp(Number((value + step).toFixed(2))))} style={styles.stepBtn}>
           <Icon name="add" size={18} color={c.evergreen} />
         </Pressable>
       </View>
+      {words ? <Text style={[styles.hint, { color: c.inkSoft }]}>{words}</Text> : null}
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
   );
 }
 
-export function TextField({ label, value, onChange, placeholder, keyboardType, maxLength, autoFocus }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; keyboardType?: "default" | "phone-pad" | "number-pad"; maxLength?: number; autoFocus?: boolean }) {
+export function TextField({ label, value, onChange, placeholder, keyboardType, maxLength, autoFocus, kind }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; keyboardType?: "default" | "phone-pad" | "number-pad"; maxLength?: number; autoFocus?: boolean; kind?: "tel" | "otp" }) {
+  // Autofill: iOS reads textContentType, Android and web read autoComplete.
+  const auto =
+    kind === "otp"
+      ? { textContentType: "oneTimeCode" as const, autoComplete: (Platform.OS === "web" ? "one-time-code" : "sms-otp") as "sms-otp" }
+      : kind === "tel"
+        ? { textContentType: "telephoneNumber" as const, autoComplete: "tel" as const }
+        : {};
   return (
     <View style={{ gap: 6 }}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput accessibilityLabel={label} value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={c.muted} keyboardType={keyboardType} maxLength={maxLength} autoFocus={autoFocus} style={[styles.inputRow, styles.inputText]} />
+      <TextInput accessibilityLabel={label} value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={c.muted} keyboardType={keyboardType} maxLength={maxLength} autoFocus={autoFocus} {...auto} style={[styles.inputRow, styles.inputText]} />
     </View>
+  );
+}
+
+/** A term with a small "?" that explains it in plain words. */
+export function Term({ term, children, style }: { term: keyof typeof GLOSSARY; children?: ReactNode; style?: StyleProp<any> }) {
+  const [open, setOpen] = useState(false);
+  const g = GLOSSARY[term];
+  return (
+    <>
+      <Pressable accessibilityRole="button" accessibilityLabel={`What does ${g.title} mean?`} hitSlop={12} onPress={() => setOpen(true)} style={{ flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start" }}>
+        {children ? <Text style={style}>{children}</Text> : null}
+        <View style={styles.helpDot}>
+          <Text style={styles.helpDotText}>?</Text>
+        </View>
+      </Pressable>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setOpen(false)} style={styles.dialogBackdrop}>
+          <View style={styles.dialog}>
+            <Text style={styles.h3}>{g.title}</Text>
+            <Text style={styles.body}>{g.body}</Text>
+            <Button label="Got it" variant="secondary" onPress={() => setOpen(false)} />
+          </View>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
+/** Dropdown that opens a simple list. Easier than a wall of chips on phones. */
+export function Select<T extends string>({ label, value, options, onChange }: { label: string; value: T | null; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
+  const [open, setOpen] = useState(false);
+  const current = options.find((o) => o.value === value);
+  return (
+    <View style={{ gap: 6, minWidth: 220 }}>
+      <Text style={styles.label}>{label}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${current?.label ?? "Choose"}`} onPress={() => setOpen(true)} style={[styles.inputRow, { justifyContent: "space-between", paddingHorizontal: 14 }]}>
+        <Text style={[styles.inputText, { paddingHorizontal: 0, flex: 1 }]} numberOfLines={1}>{current?.label ?? "Choose"}</Text>
+        <Icon name="chevron-down" size={18} color={c.inkSoft} />
+      </Pressable>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setOpen(false)} style={styles.dialogBackdrop}>
+          <View style={[styles.dialog, { padding: 8, maxHeight: "80%" }]}>
+            <Text style={[styles.label, { padding: 12 }]}>{label}</Text>
+            <ScrollView>
+              {options.map((o) => (
+                <Pressable key={o.value} accessibilityRole="button" accessibilityState={{ selected: o.value === value }} onPress={() => { onChange(o.value); setOpen(false); }} style={({ pressed }) => [styles.option, (pressed || o.value === value) && { backgroundColor: c.surfaceTint }]}>
+                  <Text style={[styles.body, { color: c.ink, flex: 1 }]}>{o.label}</Text>
+                  {o.value === value ? <Icon name="checkmark" size={18} color={c.evergreen} /> : null}
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}
+
+/** Confirmation for actions that affect money. The destructive button is primary only inside the dialog. */
+export function ConfirmDialog({ visible, title, body, confirmLabel, onConfirm, onCancel, loading }: { visible: boolean; title: string; body: string; confirmLabel: string; onConfirm: () => void; onCancel: () => void; loading?: boolean }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+      <View style={styles.dialogBackdrop}>
+        <View style={styles.dialog} accessibilityViewIsModal>
+          <Text style={styles.h3}>{title}</Text>
+          <Text style={styles.body}>{body}</Text>
+          <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <Button label="Keep it" variant="secondary" onPress={onCancel} />
+            <Button label={confirmLabel} variant="danger" loading={loading} onPress={onConfirm} />
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -216,24 +303,29 @@ export const styles = StyleSheet.create({
   body: { fontFamily: F, color: c.inkSoft, fontSize: 15, lineHeight: 24 },
   small: { fontFamily: F, color: c.muted, fontSize: 13, lineHeight: 20 },
   card: { backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border, padding: 24, gap: 10, flexGrow: 1 },
-  cardHover: { borderColor: "#C5CFD7", transform: [{ translateY: -2 }], shadowColor: c.navy, shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } },
+  cardHover: { borderColor: c.borderHover, transform: [{ translateY: -2 }], shadowColor: c.navy, shadowOpacity: 0.06, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } },
   iconTile: { width: 40, height: 40, borderRadius: 8, borderWidth: 1, borderColor: c.border, backgroundColor: c.surface, alignItems: "center", justifyContent: "center" },
   btn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 11, paddingHorizontal: 18, borderRadius: 8, borderWidth: 1, minHeight: 44, alignSelf: "flex-start" },
   btnText: { fontFamily: F, fontSize: 15, fontWeight: "600" },
-  pill: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: c.border, backgroundColor: c.surface },
+  pill: { paddingHorizontal: 14, minHeight: 44, justifyContent: "center", borderRadius: 8, borderWidth: 1, borderColor: c.borderHover, backgroundColor: c.surface },
   pillActive: { backgroundColor: c.ink, borderColor: c.ink },
   pillText: { fontFamily: F, color: c.inkSoft, fontSize: 13, fontWeight: "500" },
   tag: { alignSelf: "flex-start", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 3 },
   tagText: { fontFamily: F, fontSize: 12, fontWeight: "500" },
   label: { fontFamily: F, color: c.inkSoft, fontSize: 13, fontWeight: "500" },
-  inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: c.border, borderRadius: 8, backgroundColor: c.surface, minHeight: 46, paddingHorizontal: 4 },
+  inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: c.borderStrong, borderRadius: 8, backgroundColor: c.surface, minHeight: 52, paddingHorizontal: 4 },
   inputText: { fontFamily: F, paddingHorizontal: 12, color: c.ink, fontSize: 15, fontWeight: "500" },
   input: { fontFamily: F, flex: 1, minWidth: 40, color: c.ink, fontSize: 15, fontWeight: "600", paddingVertical: 10, paddingHorizontal: 4, textAlign: "center", fontVariant: ["tabular-nums"] },
   affix: { fontFamily: F, color: c.muted, fontSize: 14, fontWeight: "500" },
-  stepBtn: { width: 34, height: 34, borderRadius: 6, alignItems: "center", justifyContent: "center", backgroundColor: c.surfaceTint },
+  stepBtn: { width: 44, height: 44, borderRadius: 6, alignItems: "center", justifyContent: "center", backgroundColor: c.surfaceTint },
   hint: { fontFamily: F, color: c.muted, fontSize: 12 },
   statLabel: { fontFamily: F, color: c.muted, fontSize: 12, fontWeight: "500" },
   statValue: { fontFamily: F, color: c.ink, fontSize: 20, fontWeight: "600", fontVariant: ["tabular-nums"], letterSpacing: -0.3 },
+  helpDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 1, borderColor: c.borderStrong, alignItems: "center", justifyContent: "center" },
+  helpDotText: { fontFamily: F, color: c.inkSoft, fontSize: 11, fontWeight: "600", lineHeight: 14 },
+  dialogBackdrop: { flex: 1, backgroundColor: "rgba(11,30,42,0.5)", alignItems: "center", justifyContent: "center", padding: 16 },
+  dialog: { width: "100%", maxWidth: 420, backgroundColor: c.surface, borderRadius: 12, padding: 22, gap: 14 },
+  option: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48, paddingHorizontal: 12, borderRadius: 8 },
   notice: { flexDirection: "row", gap: 8, alignItems: "flex-start", borderRadius: 8, padding: 12 },
   noticeText: { fontFamily: F, flex: 1, fontSize: 13, lineHeight: 19, fontWeight: "500" },
 });

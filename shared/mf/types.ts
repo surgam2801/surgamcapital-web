@@ -44,11 +44,13 @@ export type Order = {
   sipDay?: number;
   status: OrderStatus;
   createdAt: string;
+  idempotencyKey?: string;
 };
 
 export type SipPlan = {
   id: string;
   investorId: string;
+  orderId?: string;
   code: string;
   schemeName: string;
   amount: number;

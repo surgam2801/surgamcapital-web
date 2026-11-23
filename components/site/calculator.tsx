@@ -10,7 +10,7 @@ function Result({ rows, headline, headlineLabel, note }: { rows: { label: string
   return (
     <View style={{ gap: 14 }}>
       <View style={{ backgroundColor: c.navy, borderRadius: 10, padding: 20, gap: 6 }}>
-        <Text style={{ fontFamily: F, color: "#9FB0BB", fontSize: 13, fontWeight: "500" }}>{headlineLabel}</Text>
+        <Text style={{ fontFamily: F, color: c.onDarkMuted, fontSize: 13, fontWeight: "500" }}>{headlineLabel}</Text>
         <Text style={{ fontFamily: F, color: c.white, fontSize: 32, fontWeight: "600", letterSpacing: -0.8, fontVariant: ["tabular-nums"] }}>{headline}</Text>
       </View>
       {rows.map((r) => (

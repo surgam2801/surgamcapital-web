@@ -56,7 +56,7 @@ export const WAYS_TO_INVEST: WayToInvest[] = [
   },
   {
     slug: "instant",
-    title: "Instant Access Funds",
+    title: "Quick-withdrawal funds",
     short: "Park money you may need soon",
     icon: "flash-outline",
     intro: "Liquid and overnight funds keep money close at hand. Some fund houses pay a part of a redemption to your bank within minutes.",
@@ -245,6 +245,17 @@ export const SAMPLE_NFOS: Nfo[] = [
   { id: "nfo-2", name: "Sample Target Maturity 2031 Fund", amc: "Sample AMC Two", category: "Debt", subCategory: "Target Maturity", opens: "2026-12-01", closes: "2026-12-12", minAmount: 5000, note: "Placeholder listing" },
   { id: "nfo-3", name: "Sample Nifty Midcap 150 Index Fund", amc: "Sample AMC Three", category: "Index & ETF", subCategory: "Index Funds", opens: "2026-11-18", closes: "2026-11-29", minAmount: 500, note: "Placeholder listing" },
 ];
+
+/** Plain-language explanations shown behind the small "?" next to jargon. */
+export const GLOSSARY = {
+  nav: { title: "NAV (price per unit)", body: "NAV is the price of one unit of a fund. It is updated once every working day. When you invest, you get units at that day's NAV." },
+  pa: { title: "p.a. (per year)", body: "\"p.a.\" means per year. A 3-year return of 12% p.a. means the money grew by about 12% each year, on average, over those 3 years." },
+  regularGrowth: { title: "Regular plan, Growth option", body: "A Regular plan is bought through a distributor like Surgam. Growth means profits stay invested and grow, instead of being paid out to you." },
+  elss: { title: "ELSS (tax-saving fund)", body: "An equity fund that lets you claim up to ₹1.5 lakh deduction under Section 80C (old tax regime). Your money is locked in for 3 years." },
+  sip: { title: "SIP (monthly investment)", body: "A SIP invests a fixed amount from your bank account on the same date every month. You can pause or stop it at any time." },
+  returns: { title: "How returns are worked out", body: "We compare today's NAV with the NAV at the start of the period. Returns over one year are shown per year. Past returns do not promise future returns." },
+  ltcg: { title: "Long-term gains", body: "Profit on equity fund units held for more than 12 months. Up to ₹1.25 lakh of such profit each year is tax-free." },
+} as const;
 
 export const DISCLAIMER =
   "Mutual fund investments are subject to market risks. Read all scheme-related documents carefully before investing. Past performance does not guarantee future returns.";

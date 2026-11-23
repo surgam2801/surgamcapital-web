@@ -1,14 +1,32 @@
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { CALCULATORS, TOP_LISTS, WAYS_TO_INVEST } from "@/shared/mf/content";
-import { Button, c, Card, F, Grid, Icon, IconTile, styles as t } from "./ui";
+import { Button, c, Card, F, Grid, Icon, IconTile, styles as t, useBreakpoint } from "./ui";
+
+/** Cards on wide screens; compact tappable rows on phones so the list stays short. */
 export function WaysToInvestGrid() {
   const router = useRouter();
+  const { isPhone } = useBreakpoint();
+  if (isPhone)
+    return (
+      <Card style={{ padding: 0, gap: 0 }}>
+        {WAYS_TO_INVEST.map((w, i) => (
+          <Pressable key={w.slug} accessibilityRole="link" accessibilityLabel={w.title} onPress={() => router.push(`/mutual-funds/${w.slug}` as never)} style={({ pressed }) => [s.row, i > 0 && s.rowDivider, pressed && { backgroundColor: c.surfaceTint }]}>
+            <IconTile icon={w.icon} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={t.h4}>{w.title}</Text>
+              <Text style={t.small}>{w.short}</Text>
+            </View>
+            <Icon name="chevron-forward" size={18} color={c.muted} />
+          </Pressable>
+        ))}
+      </Card>
+    );
   return (
     <Grid min={320}>
-      {WAYS_TO_INVEST.map((w, i) => (
+      {WAYS_TO_INVEST.map((w) => (
         <Card key={w.slug} onPress={() => router.push(`/mutual-funds/${w.slug}` as never)} accessibilityLabel={w.title}>
-          <IconTile icon={w.icon} tone={(["teal", "blue", "amber", "teal", "blue", "amber"] as const)[i % 6]} />
+          <IconTile icon={w.icon} />
           <Text style={t.h3}>{w.title}</Text>
           <Text style={t.body}>{w.short}</Text>
           <Text style={s.more}>Learn more →</Text>
@@ -52,5 +70,7 @@ export function CalculatorStrip() {
 }
 
 const s = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 16, minHeight: 72, paddingVertical: 12 },
+  rowDivider: { borderTopWidth: 1, borderTopColor: c.border },
   more: { fontFamily: F, color: c.evergreen, fontWeight: "600", fontSize: 14, marginTop: "auto", paddingTop: 6 },
 });
